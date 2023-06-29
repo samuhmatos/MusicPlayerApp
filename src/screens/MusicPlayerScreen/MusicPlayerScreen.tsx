@@ -73,11 +73,28 @@ export function MusicPlayer(){
         }
     },[])
 
+    const NextMusic = () => {
+        if(musicSlider.current){
+            musicSlider.current.scrollToOffset({
+                offset: (music.index + 1) * width,
+            })
+        }
+    }
+
+    const PreviousMusic = () => {
+        if(musicSlider.current){
+            musicSlider.current.scrollToOffset({
+                offset: (music.index - 1) * width,
+            })
+        }
+    }
+
     useTrackPlayerEvents([Event.PlaybackTrackChanged], async (event) => {
     
         if(event.type === Event.PlaybackTrackChanged && event.nextTrack !== null && event.nextTrack !== undefined) {
             const track = await TrackPlayer.getTrack(event.nextTrack)
             if(track) {
+                console.log(track)
                 const {title, album, artist} = track
                 dispatch(setMusic({
                     index: event.nextTrack,
@@ -89,7 +106,6 @@ export function MusicPlayer(){
             }
         }
     })
-
 
     const handleScroll = Animated.event(
         [{ nativeEvent: { contentOffset: { x: scrollX } } }],
@@ -123,7 +139,7 @@ export function MusicPlayer(){
                     <Text style={styles.artist}>{music.artist}</Text>
                 </View>
 
-                <PlayerControls musicSlider={musicSlider}/>
+                <PlayerControls PreviousMusic={PreviousMusic} NextMusic={NextMusic}/>
             </Box>
 
             <BottomBarControls />

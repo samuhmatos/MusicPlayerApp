@@ -10,34 +10,21 @@ import { useMusicRedux } from "../hooks/useMusicRedux";
 
 
 interface PlayerControlsProps {
-    musicSlider: RefObject<null>
+    PreviousMusic: ()=> void;
+    NextMusic: ()=> void;
 }
 
 const {width, height} = Dimensions.get('window')
 
 
-export function PlayerControls({musicSlider}:PlayerControlsProps){
+export function PlayerControls({PreviousMusic, NextMusic}:PlayerControlsProps){
     const playbackState = usePlaybackState()
     const progress = useProgress()
 
     const dispatch = useDispatch()
     const music = useMusicRedux()
 
-    const NextMusic = () => {
-        if(musicSlider.current){
-            musicSlider.current.scrollToOffset({
-                offset: (music.index + 1) * width,
-            })
-        }
-    }
-
-    const PreviousMusic = () => {
-        if(musicSlider.current){
-            musicSlider.current.scrollToOffset({
-                offset: (music.index - 1) * width,
-            })
-        }
-    }
+    
 
     const togglePlayback = async(playbackState:  any) => {
         const currentTrack = await TrackPlayer.getCurrentTrack()
