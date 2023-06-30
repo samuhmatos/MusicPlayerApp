@@ -1,7 +1,7 @@
-import React,{useRef, useEffect} from "react";
-import { StyleSheet, Text, View, SafeAreaView, Dimensions, Animated} from "react-native";
+import React,{useRef, useEffect, useState} from "react";
+import { StyleSheet, Text, View, SafeAreaView, Dimensions, Animated, FlatList} from "react-native";
 
-import TrackPlayer,{ Event,State,useTrackPlayerEvents } from "react-native-track-player";
+import TrackPlayer,{ Event,State,usePlaybackState,useTrackPlayerEvents, useProgress, Track } from "react-native-track-player";
 import { useDispatch } from "react-redux";
 import { setMusic } from "../../redux/musicSlice";
 
@@ -16,14 +16,19 @@ import {PlayerControls } from "../../components/PlayerControls"
 
 const {width, height} = Dimensions.get('window')
 
-  
-export function MusicPlayer(){
+export function MusicPlayerScreen(){
+    const playbackState = usePlaybackState()
+    const progress = useProgress()
+
     const scrollX  = useRef(new Animated.Value(0)).current
-    const musicSlider = useRef(null)
+    const musicSlider = useRef<FlatList<any>>(null)
 
     const dispatch = useDispatch()
     const music = useMusicRedux()
 
+    const [queue, setQueue] = useState<Track[]>([]);
+    const [isUserScroll, setIsUserScroll] = useState<boolean>(false);
+    const [lastProgrammaticScrollTime, setLastProgrammaticScrollTime] = useState(0);
 
     const setUpPlayer = async() => {
         await TrackPlayer.setupPlayer()
@@ -38,6 +43,8 @@ export function MusicPlayer(){
                 artist: track.artist,
             }))
         }
+
+        setQueue(await TrackPlayer.getQueue())
     }
 
     const skipMusic = async(trackId : number) => {
@@ -52,7 +59,7 @@ export function MusicPlayer(){
                     album: track.album,
                     artist: track.artist,
                 }))
-        
+                
                 if(actualState == State.Ready){
                     await TrackPlayer.play()
                 }
@@ -60,57 +67,76 @@ export function MusicPlayer(){
         })
     }
 
+    const skipMusicDetails = async(trackId: number) => {
+        const track = await TrackPlayer.getTrack(trackId)
+        if(track) {
+            dispatch(setMusic({
+                index: trackId,
+                title: track.title,
+                album: track.album,
+                artist: track.artist,
+            }))
+        }
+    }
+
+    useTrackPlayerEvents([Event.PlaybackTrackChanged, Event.PlaybackQueueEnded], async (event) => {
+        const currentTrackId = await TrackPlayer.getCurrentTrack();
+
+        if(event.type === Event.PlaybackQueueEnded){
+            return;
+        }
+
+        if(event.type === Event.PlaybackTrackChanged && event.nextTrack && event.nextTrack !== null) {
+            if(isUserScroll){
+                skipMusic(event.nextTrack)
+            }else{
+                scrollToMusic(event.nextTrack)
+                skipMusicDetails(event.nextTrack)
+            }
+        }
+        return;
+    })
+
     useEffect(()=>{
         setUpPlayer()
+    },[])
 
+    useEffect(() => {
         scrollX.addListener(({value})=>{
             const index = Math.round(value / width);
-            skipMusic(index)
+            if(isUserScroll){
+                skipMusic(index)
+            }else{
+                skipMusicDetails(index)
+            }
         })
-
+        
         return () => {
             scrollX.removeAllListeners()
         }
-    },[])
+    },[isUserScroll])
 
-    const NextMusic = () => {
+    const scrollToMusic = (trackId: number) => {
+        setLastProgrammaticScrollTime(Date.now());
+        setIsUserScroll(false);
+
+        const positionToScroll = trackId * width;
+        
         if(musicSlider.current){
             musicSlider.current.scrollToOffset({
-                offset: (music.index + 1) * width,
+                offset: positionToScroll
             })
         }
     }
 
-    const PreviousMusic = () => {
-        if(musicSlider.current){
-            musicSlider.current.scrollToOffset({
-                offset: (music.index - 1) * width,
-            })
+    const handleScroll = () =>{
+        const currentTime = Date.now();
+        if (currentTime - lastProgrammaticScrollTime > 100) {
+            setIsUserScroll(true);
+        } else {
+            setIsUserScroll(false);
         }
     }
-
-    useTrackPlayerEvents([Event.PlaybackTrackChanged], async (event) => {
-    
-        if(event.type === Event.PlaybackTrackChanged && event.nextTrack !== null && event.nextTrack !== undefined) {
-            const track = await TrackPlayer.getTrack(event.nextTrack)
-            if(track) {
-                console.log(track)
-                const {title, album, artist} = track
-                dispatch(setMusic({
-                    index: event.nextTrack,
-                    title: title,
-                    album: album,
-                    artist: artist,
-                }))
-                
-            }
-        }
-    })
-
-    const handleScroll = Animated.event(
-        [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-        { useNativeDriver: false }
-    );
 
     return (
         <SafeAreaView style={styles.container}>
@@ -124,13 +150,16 @@ export function MusicPlayer(){
                     <Animated.FlatList 
                         ref={musicSlider}
                         data={musics}
-                        renderItem={({item}) => <MusicsRender album={music.album  ? music.album : item.album } />}
+                        renderItem={({item}) => <MusicsRender album={/*music.album  ? music.album :*/ item.album } />}
                         keyExtractor={({id}) => id.toString()}
                         horizontal
                         pagingEnabled
                         showsHorizontalScrollIndicator={false}
                         scrollEventThrottle={16}
-                        onScroll={handleScroll}
+                        onScroll={Animated.event(
+                            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                            { useNativeDriver: false, listener: handleScroll }
+                        )}
                     /> 
                 </Box>
 
@@ -139,7 +168,7 @@ export function MusicPlayer(){
                     <Text style={styles.artist}>{music.artist}</Text>
                 </View>
 
-                <PlayerControls PreviousMusic={PreviousMusic} NextMusic={NextMusic}/>
+                <PlayerControls scrollToMusic={scrollToMusic} queue={queue}/>
             </Box>
 
             <BottomBarControls />

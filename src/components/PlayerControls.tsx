@@ -1,40 +1,81 @@
-import React,{RefObject} from "react";
-import { StyleSheet, Text, TouchableOpacity, Dimensions } from "react-native";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity } from "react-native";
 import Slider from "@react-native-community/slider";
 
-import TrackPlayer, { State, usePlaybackState, useProgress } from "react-native-track-player";
+import TrackPlayer, { RepeatMode, State, Track, usePlaybackState, useProgress } from "react-native-track-player";
 import { Box } from "./Box/Box";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useDispatch } from "react-redux";
 import { useMusicRedux } from "../hooks/useMusicRedux";
 
-
 interface PlayerControlsProps {
-    PreviousMusic: ()=> void;
-    NextMusic: ()=> void;
+    scrollToMusic: (trackedId:number)=> void;
+    queue: Track[]
 }
 
-const {width, height} = Dimensions.get('window')
-
-
-export function PlayerControls({PreviousMusic, NextMusic}:PlayerControlsProps){
+export function PlayerControls({scrollToMusic, queue}:PlayerControlsProps){
     const playbackState = usePlaybackState()
     const progress = useProgress()
-
+    const [leftTime, setLeftTime] = useState<string>('')
     const dispatch = useDispatch()
     const music = useMusicRedux()
 
+    useEffect(() => {
+        defineLeftTime()
+    }, [progress.position])
     
+    function defineLeftTime() {
+        let rest = (progress.duration - progress.position) * 1000;
+
+        let time;
+        if(rest >= 0)
+            time = new Date(rest).toISOString().substr(14,5);
+        else
+            time = '00:00';
+
+        setLeftTime(time)
+    }
 
     const togglePlayback = async(playbackState:  any) => {
+        //se chegou no n final da fila, se clicar em play, tocar a ultima musica da fila
         const currentTrack = await TrackPlayer.getCurrentTrack()
-    
+        
         if(currentTrack !== null){
             if(playbackState == State.Paused || playbackState == State.Ready){
                 await TrackPlayer.play()
             }else{
                 await TrackPlayer.pause()
             }
+        }else{
+            //await TrackPlayer.
+        }
+    }
+
+    const NextMusic = async() => {
+        var index = music.index + 1;
+
+        if(index <= (queue.length - 1)){
+            scrollToMusic(index)
+            await TrackPlayer.skipToNext()
+        }else{
+            if(music.repeatMode === RepeatMode.Queue){
+                scrollToMusic(0)
+                await TrackPlayer.skipToNext()
+            }else{
+                await TrackPlayer.seekTo(0).then(async () => await TrackPlayer.play())
+            }
+        }
+    }
+
+    const PreviousMusic = async() => {
+        var index = music.index - 1;
+
+        if(index < 0){
+            await TrackPlayer.seekTo(0)
+            await TrackPlayer.play()
+        }else{
+            scrollToMusic(index)
+            await TrackPlayer.skipToPrevious()
         }
     }
 
@@ -48,8 +89,8 @@ export function PlayerControls({PreviousMusic, NextMusic}:PlayerControlsProps){
                 mt="s10"
             >
                 <Slider 
-                    style={styles.progressBar}
-                    value={progress.position}
+                 style={styles.progressBar}
+                 value={progress.position}
                     minimumValue={0}
                     maximumValue={progress.duration}
                     thumbTintColor="#2B7CB5"
@@ -69,7 +110,7 @@ export function PlayerControls({PreviousMusic, NextMusic}:PlayerControlsProps){
                         {new Date(progress.position * 1000).toISOString().substr(14, 5)}
                     </Text>
                     <Text style={styles.progressTxt}>
-                        {new Date((progress.duration - progress.position) * 1000).toISOString().substr(14,5)}
+                        {leftTime}
                     </Text>
                 </Box>
             </Box>
