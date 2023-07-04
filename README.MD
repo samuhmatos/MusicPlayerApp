@@ -1,13 +1,14 @@
 # Music Player App
 
-Android App. Play, Skip and Repeat the music
+Application only supported in a Android system.
+Play,Pause,Skip and Repeat the music or the queue anytime and anywhere you want!
 
-### Execução
+### Execution
 
-Clone o repositório, instale as dependências e execute o projeto:
+Clone the repository in your machine, install all needed dependencies to execute it
 
 ```bash
-$ git clone https://github.com/samuhmatos/MusicPlayerApp
+$ git clonehttps://github.com/samuhmatos/MusicPlayerApp.git
 $ cd MusicPlayerApp
 $ npm install
 $ npm run android
