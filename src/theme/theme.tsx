@@ -1,49 +1,47 @@
-import { createTheme } from "@shopify/restyle"
-import { ViewStyle } from "react-native";
-
+import {createTheme} from '@shopify/restyle';
+import {ViewStyle} from 'react-native';
 
 export const palette = {
-    bluePrimary: "#1C5075"
-  };
-
+  bluePrimary: '#1C5075',
+};
 
 export const theme = createTheme({
-    colors: {
-        ...palette,
-        primary: palette.bluePrimary
-    },
-    spacing: {
-        s4: 4,
-        s8: 8,
-        s10: 10,
-        s12: 12,
-        s14: 14,
-        s16: 16,
-        s20: 20,
-        s24: 24,
-        s32: 32,
-        s40: 40,
-        s48: 48,
-        s56: 56,
-    },
-    borderRadii: {
-        s8: 8,
-        s12: 12,
-        s16: 16,
-    },
-    
-      textVariants: {
-        defaults: {},
-    },
-})
+  colors: {
+    ...palette,
+    primary: palette.bluePrimary,
+  },
+  spacing: {
+    s4: 4,
+    s8: 8,
+    s10: 10,
+    s12: 12,
+    s14: 14,
+    s16: 16,
+    s20: 20,
+    s24: 24,
+    s32: 32,
+    s40: 40,
+    s48: 48,
+    s56: 56,
+  },
+  borderRadii: {
+    s8: 8,
+    s12: 12,
+    s16: 16,
+  },
+
+  textVariants: {
+    defaults: {},
+  },
+});
 
 export const $shadowProps: ViewStyle = {
-    elevation: 7,
-    shadowColor:'#000',
-    shadowOpacity:0.05,
-    shadowRadius:12,
-    shadowOffset:{width:0, height:-3}
-}
+  elevation: 7,
+  shadowColor: '#000',
+  shadowOpacity: 0.05,
+  shadowRadius: 12,
+  shadowOffset: {width: 0, height: -3},
+};
 
-export type Theme = typeof theme
-export type ThemeColors = keyof Theme['colors']
+export type Theme = typeof theme;
+export type ThemeColors = keyof Theme['colors'];
