@@ -153,9 +153,7 @@ export function MusicPlayerScreen() {
           <Animated.FlatList
             ref={musicSlider}
             data={musics}
-            renderItem={({item}) => (
-              <MusicsRender album={/*music.album  ? music.album :*/ item.album} />
-            )}
+            renderItem={({item}) => <MusicsRender album={item.album} />}
             keyExtractor={({id}) => id.toString()}
             horizontal
             pagingEnabled
